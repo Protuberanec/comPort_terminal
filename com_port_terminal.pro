@@ -1,5 +1,7 @@
 QT       += core gui
 QT += serialport
+QT += printsupport
+#QT += charts
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -12,11 +14,13 @@ CONFIG += c++11
 SOURCES += \
     ComPort.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    qcustomplot.cpp
 
 HEADERS += \
     ComPort.h \
-    mainwindow.h
+    mainwindow.h \
+    qcustomplot.h
 
 FORMS += \
     mainwindow.ui

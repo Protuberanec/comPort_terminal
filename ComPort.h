@@ -1,5 +1,7 @@
 #ifndef COMPORT_H
 #define COMPORT_H
+
+#include <QDebug>
 #include    <QObject>
 #include    <QSerialPort>
 #include    <QString>
@@ -17,23 +19,27 @@ class ComPort : public QObject{
     Q_OBJECT
 private:
     int b;
+    int statusPort;
 public:
 //    explicit COM_PORT(QObject *parent = 0);
     ComPort();
     ~ComPort();
-    QSerialPort thisPort;
-    Settings SettingsPort;
+    QSerialPort thisPort;   //так делать нельзя....
+    Settings SettingsPort;  //так тоже делать нельзя....
+    bool isOpened() const {
+        return statusPort;
+    }
 signals:
     void finished_Port(); //Сигнал закрытия класса
     void error_(QString err);//Сигнал ошибок порта
     void outPort(QString data); //Сигнал вывода полученных данных
-    void DataIsReady(QByteArray data);         //сигнал готовности данных
+    void DataIsReady(const QByteArray& data);         //сигнал готовности данных
 public slots:
     void ClosePort(); // Слот отключения порта
     void OpenPort(void); // Слот подключения порта
-    void Write_Settings_Port(QString name, int baudrate, int DataBits, int Parity, int StopBits, int FlowControl);// Слот занесение настроек порта в класс
+    void setParamPort(QString name, int baudrate, int DataBits, int Parity, int StopBits, int FlowControl);// Слот занесение настроек порта в класс
     void process_Port();                //Тело
-    void WriteToPort(QByteArray data); // Слот отправки данных в порт
+    void WriteToPort(const QByteArray& data); // Слот отправки данных в порт
 private slots:
     void ReadInPort(); //Слот чтения из порта по ReadyRead
     void handleError(QSerialPort::SerialPortError error);//Слот обработки ощибок

@@ -15,6 +15,7 @@ void ComPort::ClosePort() {
     }
 }
 void ComPort::OpenPort(void) {
+    statusPort = 0;
     thisPort.setPortName(SettingsPort.name);
     if (thisPort.open(QIODevice::ReadWrite)) {
        if (thisPort.setBaudRate(SettingsPort.baudRate)
@@ -24,19 +25,21 @@ void ComPort::OpenPort(void) {
                && thisPort.setFlowControl(SettingsPort.flowControl))
         {
             if (thisPort.isOpen()){
-               printf("com port is opened!\n");
+               statusPort = 1;
+               process_Port();
+               return;
             }
         }
         else {
-            printf("com port is closed\n");
             thisPort.close();
        }
-    } else {
+    }
+    else {
        thisPort.close();
        error_(thisPort.errorString().toLocal8Bit());
     }
 }
-void ComPort::Write_Settings_Port(QString name, int baudrate, int DataBits, int Parity, int StopBits, int FlowControl)
+void ComPort::setParamPort(QString name, int baudrate, int DataBits, int Parity, int StopBits, int FlowControl)
 {
     SettingsPort.name = name;
     SettingsPort.baudRate = (QSerialPort::BaudRate) baudrate;
@@ -50,7 +53,7 @@ void ComPort::process_Port()
     qDebug("Nice to meet you in Thread!");
     connect(&thisPort, SIGNAL(readyRead()), this, SLOT(ReadInPort()));    //подключаем   чтение с порта по сигналу readyRead()
 }
-void ComPort::WriteToPort(QByteArray data)
+void ComPort::WriteToPort(const QByteArray& data)
 {
     if(thisPort.isOpen()){
         thisPort.write(data);
@@ -65,9 +68,10 @@ void ComPort::handleError(QSerialPort::SerialPortError error)
 }
 void ComPort::ReadInPort()
 {
-//    printf("Data come\n");
-    static QByteArray data;
+    QByteArray data;
     data.append(thisPort.readAll());
+    qDebug() << "data come : " << data.toHex(' ');
+    emit DataIsReady(data);
     if (data.size() < 1)
         return;
     if (data.at(data.size() - 1) == '\n') {
