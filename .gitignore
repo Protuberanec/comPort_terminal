@@ -2,3 +2,4 @@ qcustomplot/
 *.gz
 *.user.*
 *.user
+*.tar
