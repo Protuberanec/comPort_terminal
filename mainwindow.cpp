@@ -137,7 +137,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    connect(thisPort, &ComPort::DataIsReady, this, &MainWindow::WriteDataTofile);
 //    connect(thisPort, &ComPort::DataIsReady, this, &MainWindow::DrawPoint);
 
-//    test_ProcessData();
+    test_ProcessData();
 }
 
 MainWindow::~MainWindow()
@@ -205,7 +205,9 @@ void MainWindow::test_ProcessData()
     ProcessData(this->convertStrToHex("CA, 0D, 81, 21030000"));
     ProcessData(this->convertStrToHex("C4090000"));
     ProcessData(this->convertStrToHex("FFFF, FF"));
-    ProcessData(this->convertStrToHex("CA, 0D, 81, 85030000, 280A0000, FFFF, FF"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81"));
+    ProcessData(this->convertStrToHex("85030000"));
+    ProcessData(this->convertStrToHex("280A0000, FFFF, FF"));
 
     ProcessData(this->convertStrToHex("CA"));
     ProcessData(this->convertStrToHex("0D"));

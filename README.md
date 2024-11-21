@@ -32,3 +32,10 @@
 	CA    0D	81	01 00 00 00		65 0e 00 00		45 00	xor
 	будет построена одна точка графки где x = 00000001, а y = 00000e65
 
+
+*установка serial в QT*
+добавить в файл pro: Qt + = SerialPort
+если ошибка компиляции: Compile time report: Project Error Unknown Module (s) in Qt: SerialPort
+то->
+install qserialport
+sudo apt-get install libqt5serialport5-dev
