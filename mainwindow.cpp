@@ -53,19 +53,24 @@ void MainWindow::processCmd(unsigned char *cmd)
         for (; iter != pointForGraph._points.end(); iter++) {
             if (ui->W_Plot->graphCount() == 0) {
                 ui->W_Plot->addGraph();
-                ui->W_Plot->xAxis->setRange(0, 100);
-                ui->W_Plot->yAxis->setRange(-10, 80);
+                ui->W_Plot->yAxis->setRange(15, 100);
+                ui->W_Plot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, Qt::red, Qt::white, 7));
             }
-            unsigned int time = cmd[iter->_offset_x + 3] | (cmd[iter->_offset_x + 1 + 3] << 8) | (cmd[iter->_offset_x + 2 + 3] << 16) | (cmd[iter->_offset_x + 3 + 3] << 24);
-            int  temperature = cmd[iter->_offset_y + 3] | (cmd[iter->_offset_y + 1 + 3] << 8) | (cmd[iter->_offset_y + 2 + 3] << 16) | (cmd[iter->_offset_y + 3 + 3] << 24);
+            unsigned int time = cmd[iter->_offset_x + 3 + 0] | (cmd[iter->_offset_x + 3 + 1] << 8) | (cmd[iter->_offset_x + 3 + 2] << 16) | (cmd[iter->_offset_x + 3 + 3] << 24);
+            int  temperature = 0;
+            temperature = (unsigned char)cmd[iter->_offset_y + 3 + 0];
+            temperature |= (((unsigned char)cmd[iter->_offset_y + 3 + 1]) << 8);
+            temperature |= (((unsigned char)cmd[iter->_offset_y + 3 + 2]) << 16);
+            temperature |= (((unsigned char)cmd[iter->_offset_y + 3 + 3]) << 24);
 
             max_temperature = max_temperature < (double)temperature / 100.0 ? (double)temperature/100.0 : max_temperature;
 
-            ui->W_Plot->graph(0)->addData((double)time / 1000.0, (double)temperature/100.0);
+            ui->W_Plot->graph(0)->addData((double)time / 100.0, (double)temperature/100.0);
+            ui->W_Plot->xAxis->setRange(0, (double)time / 100.0);
+            ui->W_Plot->rescaleAxes();
             ui->W_Plot->replot();
-            //we find cmd with format... and start write
-        }
 
+        }
     }
 }
 //CA 09 01 81 82 83 84 85 86
@@ -79,22 +84,21 @@ void MainWindow::ProcessData(const QByteArray &data)
         switch(curStatus) {
             case Status::waitSync :
                 if ((unsigned char)data[i] == (unsigned char)SYNC) {
-                    curSize = 0;
                     curStatus = Status::waitLen;
                 }
             break;
             case Status::waitLen :
                 cmd[pos_LEN] = data[i];
+                curSize = 3; /*minus len, cmd, ...*/
                 curStatus = Status::waitCmd;
-                curSize = data[i] - 2   /*cmd, len...*/;
             break;
             case Status::waitCmd :
                 cmd[pos_CMD] = data[i];
                 curStatus = Status::procData;
             break;
             case Status::procData :
-                if ((data.size() - i) >= curSize) {
-                    std::memcpy(&cmd[pos_DATA + (cmd[pos_LEN] - curSize)], &data.data()[i], cmd[pos_LEN]);
+                if ((data.size() - i) >= (cmd[pos_LEN] - curSize)) {
+                    std::memcpy(&cmd[curSize], &data.data()[i], cmd[pos_LEN] - 2);
                     i += cmd[pos_LEN];
                     if (Checkxor(cmd, cmd[pos_LEN]) == 0) { /*don't check xor*/}
 
@@ -103,15 +107,13 @@ void MainWindow::ProcessData(const QByteArray &data)
                     curStatus = Status::waitSync;
                 }
                 else {
-                    std::memcpy(&cmd[pos_DATA + (cmd[pos_LEN] - curSize)], &data.data()[i], (data.size() - i));
-                    curSize -= (data.size() - i);   //<-- need check
+                    std::memcpy(&cmd[curSize], &data.data()[i], (data.size() - i));
+                    curSize += (data.size() - i);   //<-- need check
                     i += (data.size() - i);
                 }
             break;
         }
     }
-
-
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -189,9 +191,41 @@ void MainWindow::test_ProcessCmd()
 void MainWindow::test_ProcessData()
 {
     ProcessData(this->convertStrToHex("CA, 07, 88, 00, 04, 04, 04, FF"));
-    ProcessData(this->convertStrToHex("CA, 0D, 81, 01,00,00,00, AA,00,00,00, FF,FF, FF"));
 
-    ProcessData(this->convertStrToHex("CA, 0D, 81, 01,00,0000, AA00,00,00"));
-    ProcessData(this->convertStrToHex("ff ff ff"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81, 64000000, 60090000, FFFF, FF"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81, C8000000, C4090000, FFFF, FF"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81, 2C010000, 280A0000, FFFF, FF"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81, 90010000, 8C0A0000, FFFF, FF"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81, F4010000, F00A0000, FFFF, FF"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81, 58020000, 540B0000, FFFF, FF"));
+
+    ProcessData(this->convertStrToHex("CA, 0D, 81, BC020000"));
+    ProcessData(this->convertStrToHex("600C0000, FFFF, FF"));
+
+    ProcessData(this->convertStrToHex("CA, 0D, 81, 21030000"));
+    ProcessData(this->convertStrToHex("C4090000"));
+    ProcessData(this->convertStrToHex("FFFF, FF"));
+    ProcessData(this->convertStrToHex("CA, 0D, 81, 85030000, 280A0000, FFFF, FF"));
+
+    ProcessData(this->convertStrToHex("CA"));
+    ProcessData(this->convertStrToHex("0D"));
+    ProcessData(this->convertStrToHex("81"));
+    ProcessData(this->convertStrToHex("E9"));
+    ProcessData(this->convertStrToHex("03"));
+    ProcessData(this->convertStrToHex("00"));
+    ProcessData(this->convertStrToHex("00"));
+    ProcessData(this->convertStrToHex("A0"));
+    ProcessData(this->convertStrToHex("0F"));
+    ProcessData(this->convertStrToHex("00"));
+    ProcessData(this->convertStrToHex("00"));
+    ProcessData(this->convertStrToHex("FF"));
+    ProcessData(this->convertStrToHex("FF"));
+    ProcessData(this->convertStrToHex("FF"));
+
+    ProcessData(this->convertStrToHex("CA, 0D, 81, 5D040000, 8C0A0000, FFFF, FF"));
+//    ProcessData(this->convertStrToHex("CA, 0D, 81, F4010000, F00A0000, FFFF, FF"));
+//    ProcessData(this->convertStrToHex("CA, 0D, 81, 58020000, 540B0000, FFFF, FF"));
+
+
 }
 
